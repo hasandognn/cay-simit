@@ -8,6 +8,12 @@ Boğaz kıyısında geçen, Türk kahvaltısı temalı bağımsız bir HTML5 eş
 
 Herhangi bir statik sunucuya yalnızca `dist/` içeriği yüklenir. Yazı tipi için Google Fonts kullanılır; bağlantı yoksa yerel yazı tipine geçilir.
 
+## GitHub Pages
+
+Oyun adresi: https://hasandognn.github.io/cay-simit/
+
+`main` dalına gönderilen değişiklikler `.github/workflows/pages.yml` ile otomatik yayınlanır. İş akışı önce oyun kurallarını test eder, ardından yalnızca `dist/` klasörünü GitHub Pages'e yükler.
+
 ## Oynanış
 
 - Yan yana iki taşı kaydırarak veya sırayla seçerek değiştir. Üç aynı taş yatay veya dikey birleşince temizlenir.
