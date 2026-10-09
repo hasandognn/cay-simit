@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="rainbow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffba72"/><stop offset=".25" stop-color="#fa7dab"/><stop offset=".5" stop-color="#9f7aef"/><stop offset=".75" stop-color="#5dd6db"/><stop offset="1" stop-color="#bbf09d"/></linearGradient>
+    <linearGradient id="gold" x1=".2" y1="0" x2=".7" y2="1"><stop stop-color="#ffffdc"/><stop offset=".45" stop-color="#ffe998"/><stop offset=".6" stop-color="#ffc653"/><stop offset="1" stop-color="#d28c30"/></linearGradient>
+    <radialGradient id="shine" cx=".35" cy=".25"><stop stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <circle cx="64" cy="67" r="46" fill="url(#rainbow)" stroke="#8373b3" stroke-width="2.5"/>
+  <circle cx="64" cy="67" r="40" fill="url(#shine)" stroke="#fff2df" stroke-width="2" opacity=".75"/>
+  <ellipse cx="64" cy="72" rx="58" ry="20" fill="none" stroke="#fff0a2" stroke-width="3" transform="rotate(-27 64 72)"/>
+  <path d="m64 24 12 24 27 4-19 20 4 28-24-13-25 13 5-28-20-20 28-4Z" fill="#a85d37" stroke="#a85d37" stroke-width="6" stroke-linejoin="round" transform="translate(0 3)"/>
+  <path d="m64 22 12 24 27 4-19 20 4 28-24-13-25 13 5-28-20-20 28-4Z" fill="url(#gold)" stroke="#fff7c7" stroke-width="3" stroke-linejoin="round"/>
+  <path d="m64 31 7 20 23 3-22 6-8 20-7-20-23-6 23-3Z" fill="#fff8cc" opacity=".72"/>
+  <path d="m106 15 3 8 9 3-9 3-3 8-3-8-8-3 8-3ZM20 92l2 6 6 2-6 2-2 6-2-6-6-2 6-2Z" fill="#fff8c5" stroke="#e6bd5a" stroke-width="1.5"/>
+</svg>

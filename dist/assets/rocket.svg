@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="body" x1=".15" y1="0" x2=".9" y2=".8" gradientUnits="objectBoundingBox"><stop stop-color="#fff0be"/><stop offset=".28" stop-color="#ff7960"/><stop offset=".62" stop-color="#e9443d"/><stop offset="1" stop-color="#a92138"/></linearGradient>
+    <linearGradient id="fin" x2=".8" y2="1"><stop stop-color="#acffeb"/><stop offset=".48" stop-color="#2ec6bd"/><stop offset="1" stop-color="#087885"/></linearGradient>
+    <linearGradient id="gold" x2=".8" y2="1"><stop stop-color="#fffbc5"/><stop offset=".45" stop-color="#ffdb76"/><stop offset="1" stop-color="#cd792d"/></linearGradient>
+    <radialGradient id="glass" cx=".32" cy=".22" r=".85"><stop stop-color="#f0ffff"/><stop offset=".35" stop-color="#8ef4ff"/><stop offset="1" stop-color="#1788b2"/></radialGradient>
+    <linearGradient id="flame" x2="0" y2="1"><stop stop-color="#fffbc4"/><stop offset=".45" stop-color="#ffd55c"/><stop offset="1" stop-color="#ff754800"/></linearGradient>
+  </defs>
+  <path d="M49 96Q41 111 64 126Q87 112 79 96Z" fill="url(#flame)"/>
+  <path d="M56 95Q54 111 64 117Q75 108 71 95" fill="#fff9c9"/>
+  <path d="M44 58Q18 71 22 99L45 87M84 58Q110 71 106 99L83 87" fill="url(#fin)" stroke="#116a77" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M27 85Q31 70 44 66M86 66Q100 77 101 88" fill="none" stroke="#b4fff0" stroke-width="3" stroke-linecap="round"/>
+  <path d="M51 89H77L80 102Q64 109 48 102Z" fill="url(#gold)" stroke="#99562e" stroke-width="3"/>
+  <path d="M64 7C34 22 34 69 43 90Q64 101 85 90C94 68 94 24 64 7Z" fill="url(#body)" stroke="#922b35" stroke-width="3"/>
+  <path d="M46 30Q51 18 64 12Q74 18 81 31Q64 38 46 30Z" fill="url(#gold)"/>
+  <path d="M45 40Q40 58 46 75" fill="none" stroke="#ffd6b1" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+  <circle cx="65" cy="53" r="16" fill="url(#gold)" stroke="#af5d36" stroke-width="2"/>
+  <circle cx="65" cy="53" r="11" fill="url(#glass)" stroke="#2f777f" stroke-width="2"/>
+  <ellipse cx="61" cy="49" rx="5" ry="3" fill="#fff" opacity=".9" transform="rotate(-35 61 49)"/>
+  <path d="M42 81Q64 90 86 81L84 90Q64 99 44 90Z" fill="url(#gold)"/>
+  <path d="M64 78Q57 88 60 104L68 104Q71 88 64 78Z" fill="url(#fin)" stroke="#147c81" stroke-width="2"/>
+</svg>

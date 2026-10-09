@@ -17,8 +17,8 @@
 .tile.pressed:before{background:#fff7c875;border-color:#ffe995}
 .tile.pressed .piece-art{transform:scale(.99)}
 .tile.clearing .piece-art{animation:juicy-pop .29s cubic-bezier(.2,.8,.3,1) var(--pop-delay,0ms) both}
-.tile.clearing .power-art{animation:power-clear .29s ease-out var(--pop-delay,0ms) both}
-.tile.landing .piece-art,.tile.landing .power-art{animation:soft-land .16s ease-out .29s both}
+.tile.clearing .power-art{animation:power-clear .16s ease-out var(--pop-delay,0ms) both}
+.tile.cracked .piece-art{animation-delay:var(--pop-delay,0ms)}
 .tile.hint .piece-art{animation:mobile-hint 1.4s ease-in-out infinite}
 .tile.selected .piece-art{animation:mobile-hint 1s ease-in-out infinite}
 .tile.special{z-index:2}.power-art{will-change:auto}
@@ -31,7 +31,6 @@ body.reduce-motion *,body.reduce-motion *:before,body.reduce-motion *:after{anim
 dialog{max-height:calc(100svh - 36px);overflow-y:auto;overscroll-behavior:contain}
 .modal-close{min-width:36px;min-height:36px}.settings-row{min-height:56px}.switch{min-height:32px;width:52px}.switch:before{width:26px;height:26px}
 @keyframes juicy-pop{0%{transform:scale(1.07)}24%{transform:scale(.88,1.18)}52%{transform:scale(1.28,1.1);filter:brightness(1.45)}100%{transform:scale(.05) rotate(18deg);opacity:0}}
-@keyframes soft-land{0%{scale:1.08 .9}60%{scale:.97 1.04}100%{scale:1}}
 @keyframes mobile-hint{0%,100%{transform:scale(1.07)}50%{transform:scale(1.13) rotate(-4deg)}}
 @keyframes score-rise{0%{opacity:0;translate:0 8px;scale:.7}20%{opacity:1;scale:1}100%{opacity:0;translate:0 -38px;scale:1.05}}
 @media(max-width:799px){

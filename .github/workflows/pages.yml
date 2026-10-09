@@ -23,8 +23,8 @@ jobs:
     steps:
       - name: Check out game source
         uses: actions/checkout@v6
-      - name: Verify game rules
-        run: node --test tests/engine.test.cjs
+      - name: Verify gameplay and animation timing
+        run: node --test tests/*.test.cjs
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload standalone game

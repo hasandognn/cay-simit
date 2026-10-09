@@ -42,4 +42,6 @@ Mobil arayüz, ekranın kullanılabilir yüksekliğine göre tahtayı boyutland�
 
 Her hamlenin sonuç durumu animasyon başlamadan kaydedilir. Dörtlü eşleşmenin dört yiyeceği de toplanır ve ayrı görünümlü bir roket oluşturulur; bu roket ikinci kez yiyecek sayılmaz.
 
+Güçlendiricilerin özgün SVG görselleri küçük ekranlarda da keskin kalır. Roket iki yöne uçar; taşlar uçuşun kendilerine ulaştığı anda temizlenir. Bombanın genişleyen patlama halkaları, renk yıldızının hedeflere yayılan renkli ışıkları vardır. Taşlar düşerken boyut değiştirmez veya sekmez; yeni taşlar sütun aralıklarını koruyarak girer. Düşüş, son patlama tamamlandıktan sonra başlar. Animasyon zamanlaması testleri de yayın öncesi çalışır.
+
 Bu sürüm oynanabilir bir prototiptir. Altın yalnızca oyun içi ödüldür; ödeme veya mağaza entegrasyonu bulunmaz. İlerleme bu tarayıcıya özeldir.

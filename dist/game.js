@@ -10,7 +10,7 @@
   const svg = name => `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
   const art = type => `<span class="piece-art piece-${type}" aria-hidden="true"></span>`;
   const powerNames = { row: 'Satır roketi', bomb: 'Çevre bombası', rainbow: 'Renk yıldızı' };
-  const powerArt = kind => `<span class="power-art power-${kind}" aria-hidden="true">${svg({ row: 'rocket', bomb: 'bomb', rainbow: 'star' }[kind])}<span class="power-caption">${{ row: 'ROKET', bomb: 'BOMBA', rainbow: 'YILDIZ' }[kind]}</span></span>`;
+  const powerArt = kind => `<span class="power-art power-${kind}" aria-hidden="true"><img src="assets/${kind === 'row' ? 'rocket' : kind}.svg" alt="" draggable="false"><span class="power-caption">${{ row: 'ROKET', bomb: 'BOMBA', rainbow: 'YILDIZ' }[kind]}</span></span>`;
   let profile;
   try { profile = JSON.parse(localStorage.getItem(STORAGE)); } catch { /* Storage may be unavailable. */ }
   if (!profile || typeof profile !== 'object') profile = {};
@@ -70,6 +70,25 @@
     view = state;
     const size = { w: boardEl.clientWidth / COLS, h: boardEl.clientHeight / ROWS };
     const alive = new Set();
+    let longestMovement = 0;
+    const spawnRows = new Map();
+    if (phase === 'fall') {
+      // New pieces enter each basket-bounded column in order, with constant spacing.
+      for (let x = 0; x < COLS; x++) {
+        let segment = [];
+        const place = () => {
+          const fresh = segment.filter(({ p }) => !nodes.has(p.id));
+          fresh.forEach(({ p, y }) => spawnRows.set(p.id, y - fresh.length));
+          segment = [];
+        };
+        for (let y = 0; y < ROWS; y++) {
+          const p = state.board[y][x];
+          if (p?.type === 5) place();
+          else if (p) segment.push({ p, y });
+        }
+        place();
+      }
+    }
     for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
       const p = state.board[y][x];
       if (!p) continue;
@@ -91,18 +110,21 @@
       node.setAttribute('aria-pressed', selected?.x === x && selected?.y === y ? 'true' : 'false');
       node.style.width = `${size.w}px`; node.style.height = `${size.h}px`;
       const destination = `translate(${x * size.w}px,${y * size.h}px)`;
-      const origin = fresh ? `translate(${x * size.w}px,${(y - 2.5) * size.h}px)` : node.style.transform;
+      const sourceY = fresh ? (spawnRows.get(p.id) ?? y - 2) : Number(node.dataset.row ?? y);
+      const origin = fresh ? `translate(${x * size.w}px,${sourceY * size.h}px)` : node.style.transform;
+      node.dataset.row = y;
       movements.get(p.id)?.cancel(); movements.delete(p.id);
       node.style.transform = destination; node.style.opacity = '1';
       if (animate && motion && !document.hidden && node.animate && origin !== destination) {
         const falling = phase === 'fall';
         const frames = falling
-          ? [{ transform: origin, opacity: fresh ? 0 : 1 }, { transform: `translate(${x * size.w}px,${y * size.h + 3}px)`, opacity: 1, offset: .86 }, { transform: destination, opacity: 1 }]
+          ? [{ transform: origin, opacity: fresh ? 0 : 1 }, { transform: destination, opacity: 1 }]
           : [{ transform: origin }, { transform: destination }];
-        const animation = node.animate(frames, { duration: falling ? 340 : 180, easing: 'cubic-bezier(.2,.7,.3,1)' });
+        const duration = falling ? Math.min(420, 260 + Math.abs(y - sourceY) * 26) : 180;
+        const animation = node.animate(frames, { duration, easing: falling ? 'cubic-bezier(.22,.55,.3,1)' : 'cubic-bezier(.2,.7,.3,1)' });
+        longestMovement = Math.max(longestMovement, duration);
         movements.set(p.id, animation);
         animation.finished.then(() => { if (movements.get(p.id) === animation) movements.delete(p.id); }).catch(() => {});
-        if (falling) node.classList.add('landing');
       }
     }
     for (const [id, node] of nodes) if (!alive.has(id)) { movements.get(id)?.cancel(); movements.delete(id); node.remove(); nodes.delete(id); }
@@ -119,6 +141,7 @@
       $(`${kind}Button`).disabled = busy || state.status !== 'playing' || !state.boosters[kind];
     }
     boardEl.setAttribute('aria-busy', String(busy));
+    return longestMovement;
   }
   function renderTargets(state) {
     const types = Object.keys(engine.config.targets);
@@ -158,9 +181,9 @@
       if (move) { nodeAt(move.a)?.classList.add('hint'); nodeAt(move.b)?.classList.add('hint'); }
     }, engine.moves === engine.config.moves ? 2200 : 4800);
   }
-  function clearEffects(event) {
+  function clearEffects(event, timing) {
     if (!motion || document.hidden) return;
-    effects.burst(event);
+    effects.burst(event, timing);
     if (event.power) document.querySelector('.board-frame').animate?.([{ translate: '0 0' }, { translate: '-2px 1px', offset: .2 }, { translate: '2px -1px', offset: .45 }, { translate: '-1px 0', offset: .7 }, { translate: '0 0' }], { duration: 220 });
     if (event.points && event.positions.length) {
       const center = event.positions.reduce((sum, p) => ({ x: sum.x + p.x, y: sum.y + p.y }), { x: 0, y: 0 });
@@ -181,13 +204,16 @@
       fly.style.cssText = `left:${a.x + (a.width - size) / 2}px;top:${a.y}px;width:${size}px;height:${size}px`;
       document.body.appendChild(fly);
       const dx = b.x + b.width / 2 - a.x - a.width / 2, dy = b.y + b.height / 2 - a.y - size / 2;
-      const animation = fly.animate?.([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${dx * .35}px,${dy * .65 - 18}px) scale(.85)`, offset: .55, opacity: 1 }, { transform: `translate(${dx}px,${dy}px) scale(.35)`, opacity: 0 }], { duration: 410, delay: 70, easing: 'cubic-bezier(.3,0,.6,1)' });
+      const delay = timing.delayAt(pos) + 70;
+      fly.style.opacity = '0';
+      const animation = fly.animate?.([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${dx * .35}px,${dy * .65 - 18}px) scale(.85)`, offset: .55, opacity: 1 }, { transform: `translate(${dx}px,${dy}px) scale(.35)`, opacity: 0 }], { duration: 410, delay, fill: 'forwards', easing: 'cubic-bezier(.3,0,.6,1)' });
       if (animation) animation.finished.then(() => fly.remove()).catch(() => fly.remove());
-      setTimeout(() => fly.remove(), 650);
+      setTimeout(() => fly.remove(), delay + 500);
     }
   }
-  function comboLabel(text) {
+  function comboLabel(text, power = false) {
     clearTimeout(comboTimer); $('combo').classList.remove('show'); $('combo').textContent = text;
+    $('combo').classList.toggle('power-message', power);
     requestAnimationFrame(() => $('combo').classList.add('show'));
     comboTimer = setTimeout(() => $('combo').classList.remove('show'), 820);
   }
@@ -202,19 +228,20 @@
     try {
     for (const event of result.events) {
       if (thisTurn !== turnId || document.hidden) break;
-      render(event.state, event.kind !== 'create', event.kind);
+      const movementDuration = render(event.state, event.kind !== 'create', event.kind);
       if (event.kind === 'swap') { sound(); await wait(185); }
       if (event.kind === 'invalid') {
         event.positions.forEach(pos => nodeAt(pos)?.classList.add('shake'));
         sound('bad'); guidance('En az 3 aynı taş yan yana gelmeli. Hamlen harcanmadı.'); await wait(250);
       }
       if (event.kind === 'clear') {
-        event.positions.forEach((pos, i) => { const node = nodeAt(pos); if (node) { node.style.setProperty('--pop-delay', `${i % 4 * 12}ms`); node.classList.add('clearing'); } });
-        event.cracked.forEach(pos => nodeAt(pos)?.classList.add('cracked'));
-        clearEffects(event); sound('clear', event.chain); haptic(event.power ? 18 : 8);
-        if (event.chain > 1) comboLabel(event.chain > 3 ? 'Tadından yenmez!' : event.chain > 2 ? 'Oh, mis!' : 'Afiyet olsun!');
-        else if (event.power) comboLabel('Şahane!');
-        await wait(event.power ? 360 : 325);
+        const timing = window.TeaEffects.plan(event);
+        event.positions.forEach(pos => { const node = nodeAt(pos); if (node) { node.style.setProperty('--pop-delay', `${timing.delayAt(pos)}ms`); node.classList.add('clearing'); } });
+        event.cracked.forEach(pos => { const node = nodeAt(pos); if (node) { node.style.setProperty('--pop-delay', `${timing.delayAt(pos)}ms`); node.classList.add('cracked'); } });
+        clearEffects(event, timing); sound('clear', event.chain); haptic(event.power ? 18 : 8);
+        if (event.chain > 1) comboLabel(event.chain > 3 ? 'Tadından yenmez!' : event.chain > 2 ? 'Oh, mis!' : 'Afiyet olsun!', event.power);
+        else if (event.power) comboLabel('Şahane!', true);
+        await wait(timing.duration);
       }
       if (event.kind === 'create') {
         event.pieces.forEach(piece => { nodes.get(piece.id)?.classList.add('power-born'); newPowers.add(piece.id); });
@@ -223,7 +250,7 @@
         guidance(`${name} oluştu. Dokunarak patlatabilirsin.`);
         await wait(280);
       }
-      if (event.kind === 'fall') await wait(370);
+      if (event.kind === 'fall') await wait(movementDuration + 24);
       if (event.kind === 'shuffle') { toast(event.automatic ? 'Eşleşme kalmadı, taşlar tazelendi.' : 'Taşlar tazelendi. Yeni bir başlangıç!'); await wait(300); }
     }
     } catch (error) {

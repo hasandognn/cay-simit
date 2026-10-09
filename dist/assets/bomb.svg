@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="orb" cx=".32" cy=".22" r=".8"><stop stop-color="#edcfff"/><stop offset=".28" stop-color="#ae7be2"/><stop offset=".65" stop-color="#7744ab"/><stop offset="1" stop-color="#382c69"/></radialGradient>
+    <linearGradient id="gold" x2=".8" y2="1"><stop stop-color="#fff5b1"/><stop offset=".5" stop-color="#ffd068"/><stop offset="1" stop-color="#b77635"/></linearGradient>
+    <radialGradient id="spark"><stop stop-color="#fffdef"/><stop offset=".3" stop-color="#ffe279"/><stop offset="1" stop-color="#ffad3400"/></radialGradient>
+  </defs>
+  <path d="M68 35C58 4 100 10 98 22" fill="none" stroke="#795139" stroke-width="7" stroke-linecap="round"/>
+  <path d="M68 32C62 10 94 11 97 19" fill="none" stroke="#f9d691" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="99" cy="20" r="20" fill="url(#spark)"/>
+  <path d="m99 4 3 11 12 5-12 4-3 11-4-11-10-4 10-5Z" fill="#fff2a5" stroke="#ed9937" stroke-width="1.5"/>
+  <path d="m55 31 25 5-4 21-25-6Z" fill="url(#gold)" stroke="#936132" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="60" cy="77" r="40" fill="url(#orb)" stroke="#49336e" stroke-width="3"/>
+  <path d="M27 91Q62 103 98 76L95 92Q66 118 34 105Z" fill="url(#gold)" stroke="#80523e" stroke-width="1.5"/>
+  <path d="M31 69Q34 49 56 47" fill="none" stroke="#f9e5ff" stroke-width="6" stroke-linecap="round" opacity=".88"/>
+  <ellipse cx="36" cy="79" rx="3" ry="5" fill="#e7caff" opacity=".7"/>
+  <path d="m66 58 3 8 9 3-9 3-3 8-3-8-8-3 8-3Z" fill="#ffeaba"/>
+  <path d="M48 110Q67 117 83 104" fill="none" stroke="#c892ec" stroke-width="2" stroke-linecap="round"/>
+</svg>

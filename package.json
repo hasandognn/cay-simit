@@ -4,7 +4,7 @@
   "private": true,
   "description": "Bağımsız Türk kahvaltısı temalı HTML5 eşleştirme oyunu",
   "scripts": {
-    "test": "node --test tests/engine.test.cjs",
+    "test": "node --test tests/*.test.cjs",
     "start": "python3 -m http.server 4177 --bind 127.0.0.1 --directory dist"
   }
 }
