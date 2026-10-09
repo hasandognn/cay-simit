@@ -4,10 +4,13 @@
   const $ = id => document.getElementById(id);
   const boardEl = $('board'), modal = $('modal'), content = $('modalContent');
   const STORAGE = 'cay-simit-v1';
-  const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+  let motion = !motionQuery.matches;
   const defaultGuidance = 'Yan yana taşları değiştir, 3 tanesini eşleştir.';
   const svg = name => `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
   const art = type => `<span class="piece-art piece-${type}" aria-hidden="true"></span>`;
+  const powerNames = { row: 'Satır roketi', bomb: 'Çevre bombası', rainbow: 'Renk yıldızı' };
+  const powerArt = kind => `<span class="power-art power-${kind}" aria-hidden="true">${svg({ row: 'rocket', bomb: 'bomb', rainbow: 'star' }[kind])}<span class="power-caption">${{ row: 'ROKET', bomb: 'BOMBA', rainbow: 'YILDIZ' }[kind]}</span></span>`;
   let profile;
   try { profile = JSON.parse(localStorage.getItem(STORAGE)); } catch { /* Storage may be unavailable. */ }
   if (!profile || typeof profile !== 'object') profile = {};
@@ -16,6 +19,8 @@
     coins: Number.isSafeInteger(profile.coins) && profile.coins >= 0 ? profile.coins : 0,
     best: Array.isArray(profile.best) ? profile.best.slice(0, LEVELS.length).map(n => [1, 2, 3].includes(n) ? n : 0) : [],
     sound: profile.sound !== false,
+    motion: profile.motion !== false,
+    haptics: profile.haptics === true,
     active: profile.active,
     awarded: profile.awarded === true,
     seenHelp: profile.seenHelp === true,
@@ -24,8 +29,19 @@
   if (!profile.active || engine.status === 'playing') profile.awarded = false;
   let view = engine.snapshot(), busy = false, selected = null, activeBooster = null;
   let hintTimer, toastTimer, comboTimer, pointer, suppressClickUntil = 0, audioContext;
+  let turnId = 0;
   const nodes = new Map();
-  const wait = ms => new Promise(resolve => setTimeout(resolve, motion ? ms : Math.min(ms, 25)));
+  const movements = new Map(), targetNodes = new Map();
+  const effects = new window.TeaEffects($('fxCanvas'), () => motion);
+  const wait = ms => new Promise(resolve => setTimeout(resolve, motion && !document.hidden ? ms : Math.min(ms, 20)));
+  function motionPreference() {
+    motion = profile.motion && !motionQuery.matches;
+    document.body.classList.toggle('reduce-motion', !motion);
+    if (!motion) effects.clear();
+  }
+  motionPreference();
+  motionQuery.addEventListener('change', motionPreference);
+  function haptic(duration = 10) { if (profile.haptics && navigator.vibrate) { try { navigator.vibrate(duration); } catch {} } }
   const save = () => {
     profile.active = engine.snapshot();
     try { localStorage.setItem(STORAGE, JSON.stringify(profile)); } catch { /* The game also works without storage. */ }
@@ -50,7 +66,7 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 2700);
   }
   function guidance(message = defaultGuidance) { $('guidance').textContent = message; }
-  function render(state = engine.snapshot(), animate = true) {
+  function render(state = engine.snapshot(), animate = true, phase = '') {
     view = state;
     const size = { w: boardEl.clientWidth / COLS, h: boardEl.clientHeight / ROWS };
     const alive = new Set();
@@ -66,24 +82,30 @@
       }
       const signature = `${p.type}:${p.special || ''}:${p.hp || ''}`;
       if (node.dataset.signature !== signature) {
-        node.innerHTML = art(p.type) + (p.type === 5 && p.hp > 1 ? `<span class="basket-strength">${p.hp}</span>` : '');
+        node.innerHTML = (p.special ? powerArt(p.special) : art(p.type)) + (p.type === 5 && p.hp > 1 ? `<span class="basket-strength">${p.hp}</span>` : '');
         node.dataset.signature = signature;
       }
       node.className = `tile${p.type === 5 ? ' basket' : ''}${p.special ? ` special special-${p.special}` : ''}${selected?.x === x && selected?.y === y ? ' selected' : ''}`;
       node.dataset.x = x; node.dataset.y = y; node.dataset.id = p.id;
-      const specialLabel = p.special ? { row: ', satır roketi', bomb: ', lokum bombası', rainbow: ', renk yıldızı' }[p.special] : '';
-      node.setAttribute('aria-label', `${y + 1}. satır, ${x + 1}. sütun: ${NAMES[p.type]}${specialLabel}${p.type === 5 ? `, ${p.hp} darbe` : ''}`);
+      node.setAttribute('aria-label', `${y + 1}. satır, ${x + 1}. sütun: ${p.special ? powerNames[p.special] + ', dokunarak patlat' : NAMES[p.type]}${p.type === 5 ? `, ${p.hp} darbe` : ''}`);
       node.setAttribute('aria-pressed', selected?.x === x && selected?.y === y ? 'true' : 'false');
       node.style.width = `${size.w}px`; node.style.height = `${size.h}px`;
       const destination = `translate(${x * size.w}px,${y * size.h}px)`;
-      if (fresh && animate && motion) {
-        node.style.transition = 'none'; node.style.transform = `translate(${x * size.w}px,${-size.h * (1 + (ROWS - y) / 3)}px)`; node.style.opacity = '0';
-        requestAnimationFrame(() => requestAnimationFrame(() => { node.style.transition = ''; node.style.transform = destination; node.style.opacity = '1'; }));
-      } else {
-        node.style.transition = animate && motion ? '' : 'none'; node.style.transform = destination; node.style.opacity = '1';
+      const origin = fresh ? `translate(${x * size.w}px,${(y - 2.5) * size.h}px)` : node.style.transform;
+      movements.get(p.id)?.cancel(); movements.delete(p.id);
+      node.style.transform = destination; node.style.opacity = '1';
+      if (animate && motion && !document.hidden && node.animate && origin !== destination) {
+        const falling = phase === 'fall';
+        const frames = falling
+          ? [{ transform: origin, opacity: fresh ? 0 : 1 }, { transform: `translate(${x * size.w}px,${y * size.h + 3}px)`, opacity: 1, offset: .86 }, { transform: destination, opacity: 1 }]
+          : [{ transform: origin }, { transform: destination }];
+        const animation = node.animate(frames, { duration: falling ? 340 : 180, easing: 'cubic-bezier(.2,.7,.3,1)' });
+        movements.set(p.id, animation);
+        animation.finished.then(() => { if (movements.get(p.id) === animation) movements.delete(p.id); }).catch(() => {});
+        if (falling) node.classList.add('landing');
       }
     }
-    for (const [id, node] of nodes) if (!alive.has(id)) { node.remove(); nodes.delete(id); }
+    for (const [id, node] of nodes) if (!alive.has(id)) { movements.get(id)?.cancel(); movements.delete(id); node.remove(); nodes.delete(id); }
     $('moves').textContent = state.moves;
     $('moves').parentElement.classList.toggle('low', state.moves <= 5);
     $('score').textContent = state.score.toLocaleString('tr-TR');
@@ -99,11 +121,31 @@
     boardEl.setAttribute('aria-busy', String(busy));
   }
   function renderTargets(state) {
-    const markup = Object.entries(engine.config.targets).map(([t, total]) => {
+    const types = Object.keys(engine.config.targets);
+    if (types.join(',') !== [...targetNodes.keys()].join(',')) {
+      targetNodes.clear(); $('targets').replaceChildren();
+      types.forEach(t => {
+        const node = document.createElement('div'); node.className = 'target'; node.dataset.type = t;
+        node.innerHTML = art(t) + '<b></b>'; $('targets').appendChild(node); targetNodes.set(t, node);
+      });
+    }
+    for (const [t, total] of Object.entries(engine.config.targets)) {
       const left = Math.max(0, total - (state.collected[t] || 0));
-      return `<div class="target${left === 0 ? ' done' : ''}" aria-label="${NAMES[t]}: ${left} kaldı">${art(t)}<b>${left || '✓'}</b></div>`;
-    }).join('');
-    if ($('targets').innerHTML !== markup) $('targets').innerHTML = markup;
+      const node = targetNodes.get(t), old = Number(node.dataset.remaining);
+      node.classList.toggle('done', left === 0); node.setAttribute('aria-label', `${NAMES[t]}: ${left} kaldı`);
+      node.querySelector('b').textContent = left || '✓'; node.dataset.remaining = left;
+      if (left < old && motion && node.animate) node.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.2)', offset: .4 }, { transform: 'scale(1)' }], { duration: 280 });
+    }
+  }
+  function layoutTiles() {
+    // Resizing must not replay a turn or erase an in-progress clear effect.
+    const w = boardEl.clientWidth / COLS, h = boardEl.clientHeight / ROWS;
+    for (const node of nodes.values()) {
+      movements.get(+node.dataset.id)?.cancel();
+      node.style.width = `${w}px`; node.style.height = `${h}px`;
+      node.style.transform = `translate(${+node.dataset.x * w}px,${+node.dataset.y * h}px)`;
+    }
+    movements.clear(); effects.resize();
   }
   function nodeAt(pos) { const p = view.board[pos.y]?.[pos.x]; return p ? nodes.get(p.id) : null; }
   function clearHint() { clearTimeout(hintTimer); for (const node of nodes.values()) node.classList.remove('hint'); }
@@ -114,22 +156,35 @@
       if (busy || modal.open || activeBooster || selected) return;
       const move = engine.legalMoves()[0];
       if (move) { nodeAt(move.a)?.classList.add('hint'); nodeAt(move.b)?.classList.add('hint'); }
-    }, 6500);
+    }, engine.moves === engine.config.moves ? 2200 : 4800);
   }
-  function particles(positions) {
-    if (!motion) return;
-    const w = boardEl.clientWidth / COLS, h = boardEl.clientHeight / ROWS;
-    const colors = ['#fff9d4', '#f6bc4c', '#73c7b2', '#fa9070'];
-    positions.slice(0, 22).forEach(({ x, y }, index) => {
-      for (let i = 0; i < 5; i++) {
-        const particle = document.createElement('i'); particle.className = 'particle';
-        particle.style.left = `${(x + .5) * w}px`; particle.style.top = `${(y + .5) * h}px`;
-        const angle = (i / 5) * Math.PI * 2 + index;
-        particle.style.setProperty('--dx', `${Math.cos(angle) * 37}px`); particle.style.setProperty('--dy', `${Math.sin(angle) * 35 + 12}px`);
-        particle.style.setProperty('--color', colors[(i + index) % colors.length]);
-        $('effects').appendChild(particle); setTimeout(() => particle.remove(), 650);
-      }
-    });
+  function clearEffects(event) {
+    if (!motion || document.hidden) return;
+    effects.burst(event);
+    if (event.power) document.querySelector('.board-frame').animate?.([{ translate: '0 0' }, { translate: '-2px 1px', offset: .2 }, { translate: '2px -1px', offset: .45 }, { translate: '-1px 0', offset: .7 }, { translate: '0 0' }], { duration: 220 });
+    if (event.points && event.positions.length) {
+      const center = event.positions.reduce((sum, p) => ({ x: sum.x + p.x, y: sum.y + p.y }), { x: 0, y: 0 });
+      const popup = document.createElement('span'); popup.className = 'score-popup'; popup.textContent = `+${event.points}`;
+      popup.style.left = `${(center.x / event.positions.length + .5) / COLS * 100}%`;
+      popup.style.top = `${(center.y / event.positions.length + .5) / ROWS * 100}%`;
+      $('effects').appendChild(popup); setTimeout(() => popup.remove(), 700);
+    }
+    const flown = new Set();
+    for (const pos of event.positions) {
+      const p = event.state.board[pos.y][pos.x], target = p && targetNodes.get(String(p.type));
+      if (!p || p.special || !target || flown.has(p.type) || +target.dataset.remaining <= 0) continue;
+      const source = nodeAt(pos); if (!source) continue;
+      flown.add(p.type);
+      const a = source.getBoundingClientRect(), b = target.getBoundingClientRect();
+      const fly = document.createElement('span'); fly.className = `fly-food piece-art piece-${p.type}`;
+      const size = Math.min(42, a.width);
+      fly.style.cssText = `left:${a.x + (a.width - size) / 2}px;top:${a.y}px;width:${size}px;height:${size}px`;
+      document.body.appendChild(fly);
+      const dx = b.x + b.width / 2 - a.x - a.width / 2, dy = b.y + b.height / 2 - a.y - size / 2;
+      const animation = fly.animate?.([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${dx * .35}px,${dy * .65 - 18}px) scale(.85)`, offset: .55, opacity: 1 }, { transform: `translate(${dx}px,${dy}px) scale(.35)`, opacity: 0 }], { duration: 410, delay: 70, easing: 'cubic-bezier(.3,0,.6,1)' });
+      if (animation) animation.finished.then(() => fly.remove()).catch(() => fly.remove());
+      setTimeout(() => fly.remove(), 650);
+    }
   }
   function comboLabel(text) {
     clearTimeout(comboTimer); $('combo').classList.remove('show'); $('combo').textContent = text;
@@ -138,29 +193,53 @@
   }
   async function perform(result) {
     if (!result.events.length) return;
+    const thisTurn = ++turnId, currentGame = engine;
     busy = true; selected = null; cancelBooster(); clearHint();
+    // Rules resolve synchronously. Persist that finished state before visual playback,
+    // so leaving or reloading the page during a cascade cannot undo the move.
+    save();
+    const newPowers = new Set();
+    try {
     for (const event of result.events) {
-      render(event.state);
-      if (event.kind === 'swap') { sound(); await wait(210); }
+      if (thisTurn !== turnId || document.hidden) break;
+      render(event.state, event.kind !== 'create', event.kind);
+      if (event.kind === 'swap') { sound(); await wait(185); }
       if (event.kind === 'invalid') {
         event.positions.forEach(pos => nodeAt(pos)?.classList.add('shake'));
         sound('bad'); guidance('En az 3 aynı taş yan yana gelmeli. Hamlen harcanmadı.'); await wait(250);
       }
       if (event.kind === 'clear') {
-        event.positions.forEach(pos => nodeAt(pos)?.classList.add('clearing'));
+        event.positions.forEach((pos, i) => { const node = nodeAt(pos); if (node) { node.style.setProperty('--pop-delay', `${i % 4 * 12}ms`); node.classList.add('clearing'); } });
         event.cracked.forEach(pos => nodeAt(pos)?.classList.add('cracked'));
-        particles(event.positions); sound('clear', event.chain);
+        clearEffects(event); sound('clear', event.chain); haptic(event.power ? 18 : 8);
         if (event.chain > 1) comboLabel(event.chain > 3 ? 'Tadından yenmez!' : event.chain > 2 ? 'Oh, mis!' : 'Afiyet olsun!');
         else if (event.power) comboLabel('Şahane!');
-        if (event.created.length) guidance('Özel taş hazır! Dokunarak patlatabilirsin.');
-        await wait(230);
+        await wait(event.power ? 360 : 325);
       }
-      if (event.kind === 'fall') await wait(300);
+      if (event.kind === 'create') {
+        event.pieces.forEach(piece => { nodes.get(piece.id)?.classList.add('power-born'); newPowers.add(piece.id); });
+        const name = powerNames[event.pieces[0].special];
+        comboLabel(`${name === 'Satır roketi' ? 'Roket' : name} hazır!`);
+        guidance(`${name} oluştu. Dokunarak patlatabilirsin.`);
+        await wait(280);
+      }
+      if (event.kind === 'fall') await wait(370);
       if (event.kind === 'shuffle') { toast(event.automatic ? 'Eşleşme kalmadı, taşlar tazelendi.' : 'Taşlar tazelendi. Yeni bir başlangıç!'); await wait(300); }
     }
-    busy = false; render(); save();
-    if (engine.status !== 'playing') { await wait(400); finish(); }
-    else { if (result.valid) guidance(); scheduleHint(); }
+    } catch (error) {
+      console.warn('Visual playback recovered; the resolved board is preserved.', error);
+      effects.clear();
+    } finally {
+      if (thisTurn === turnId) { busy = false; render(engine.snapshot(), false); save(); }
+    }
+    if (thisTurn !== turnId || currentGame !== engine) return;
+    if (engine.status !== 'playing') { if (!document.hidden) finish(); }
+    else {
+      const power = engine.board.flat().find(p => newPowers.has(p.id));
+      if (power) { guidance(`${powerNames[power.special]} hazır. Dokunarak patlat!`); toast(`${powerNames[power.special]} kazandın! Dokunarak patlat.`); }
+      else if (result.valid) guidance();
+      scheduleHint();
+    }
   }
   function choose(x, y) {
     if (busy || modal.open || engine.status !== 'playing') return;
@@ -175,28 +254,43 @@
     sound(); render(view, false); scheduleHint();
   }
   boardEl.addEventListener('click', e => {
-    if (Date.now() < suppressClickUntil) return;
+    if (e.detail !== 0 && Date.now() < suppressClickUntil) return;
     const node = e.target.closest('.tile'); if (node) choose(Number(node.dataset.x), Number(node.dataset.y));
   });
   boardEl.addEventListener('pointerdown', e => {
     const node = e.target.closest('.tile');
-    if (!node || busy || modal.open || engine.status !== 'playing') return;
-    pointer = { px: e.clientX, py: e.clientY, x: Number(node.dataset.x), y: Number(node.dataset.y), id: e.pointerId };
-    boardEl.setPointerCapture(e.pointerId);
+    if (!node || pointer || !e.isPrimary || e.button !== 0 || busy || modal.open || engine.status !== 'playing') return;
+    clearHint(); node.classList.add('pressed');
+    pointer = { px: e.clientX, py: e.clientY, x: Number(node.dataset.x), y: Number(node.dataset.y), id: e.pointerId, handled: false, node };
+    try { boardEl.setPointerCapture(e.pointerId); } catch { /* Native click remains available. */ }
+  });
+  function swipe(start, clientX, clientY) {
+    const dx = clientX - start.px, dy = clientY - start.py;
+    const threshold = Math.max(12, boardEl.clientWidth / COLS * .26);
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < threshold || activeBooster) return false;
+    start.handled = true; start.node.classList.remove('pressed'); selected = null;
+    suppressClickUntil = Date.now() + 450;
+    const to = Math.abs(dx) > Math.abs(dy) ? { x: start.x + Math.sign(dx), y: start.y } : { x: start.x, y: start.y + Math.sign(dy) };
+    if (to.x >= 0 && to.x < COLS && to.y >= 0 && to.y < ROWS) void perform(engine.swap(start, to));
+    return true;
+  }
+  boardEl.addEventListener('pointermove', e => {
+    if (!pointer || e.pointerId !== pointer.id || pointer.handled || busy) return;
+    swipe(pointer, e.clientX, e.clientY);
   });
   boardEl.addEventListener('pointerup', e => {
     if (!pointer || e.pointerId !== pointer.id) return;
     const start = pointer; pointer = null;
+    start.node.classList.remove('pressed');
     if (boardEl.hasPointerCapture(e.pointerId)) boardEl.releasePointerCapture(e.pointerId);
-    const dx = e.clientX - start.px, dy = e.clientY - start.py;
     // Pointer capture retargets click to the board. Handle taps here, once.
     suppressClickUntil = Date.now() + 450;
-    if (busy || modal.open) return;
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < 18 || activeBooster) { choose(start.x, start.y); return; }
-    const to = Math.abs(dx) > Math.abs(dy) ? { x: start.x + Math.sign(dx), y: start.y } : { x: start.x, y: start.y + Math.sign(dy) };
-    if (to.x >= 0 && to.x < COLS && to.y >= 0 && to.y < ROWS) void perform(engine.swap(start, to));
+    if (start.handled || busy || modal.open) return;
+    if (!swipe(start, e.clientX, e.clientY)) choose(start.x, start.y);
   });
-  boardEl.addEventListener('pointercancel', () => { pointer = null; });
+  function cancelPointer() { pointer?.node.classList.remove('pressed'); pointer = null; }
+  boardEl.addEventListener('pointercancel', cancelPointer);
+  boardEl.addEventListener('lostpointercapture', cancelPointer);
   boardEl.addEventListener('keydown', e => {
     const node = e.target.closest('.tile'); if (!node || busy) return;
     const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -241,8 +335,14 @@
   }
   function settings() {
     if (busy) { toast('Taşlar yerleşiyor, bir saniye…'); return; }
-    openDialog(`<div class="modal-eyebrow">KEYFİNE GÖRE</div><h1 class="modal-title" id="modalTitle">Küçük ayarlar</h1><div class="settings-row"><span>${svg('sound')} Oyun sesleri</span><button class="switch" id="soundToggle" role="switch" aria-label="Oyun sesleri" aria-checked="${profile.sound}"></button></div><div class="settings-actions"><button class="primary-button" id="resumeButton">Oyuna dön ${svg('arrow')}</button><button class="secondary-button" id="restartButton">Bu bölüme yeniden başla</button><button class="secondary-button" id="settingsMap">Bölümler</button></div>`);
+    openDialog(`<div class="modal-eyebrow">KEYFİNE GÖRE</div><h1 class="modal-title" id="modalTitle">Küçük ayarlar</h1>
+      <div class="settings-row"><span>${svg('sound')} Oyun sesleri</span><button class="switch" id="soundToggle" role="switch" aria-label="Oyun sesleri" aria-checked="${profile.sound}"></button></div>
+      <div class="settings-row"><span>${svg('star')} Canlı efektler</span><button class="switch" id="motionToggle" role="switch" aria-label="Canlı efektler" aria-checked="${profile.motion}"></button></div>
+      ${navigator.vibrate ? `<div class="settings-row"><span>Hafif titreşim</span><button class="switch" id="hapticToggle" role="switch" aria-label="Hafif titreşim" aria-checked="${profile.haptics}"></button></div>` : ''}
+      <div class="settings-actions"><button class="primary-button" id="resumeButton">Oyuna dön ${svg('arrow')}</button><button class="secondary-button" id="restartButton">Bu bölüme yeniden başla</button><button class="secondary-button" id="settingsMap">Bölümler</button></div>`);
     $('soundToggle').onclick = () => { profile.sound = !profile.sound; $('soundToggle').setAttribute('aria-checked', String(profile.sound)); save(); sound(); };
+    $('motionToggle').onclick = () => { profile.motion = !profile.motion; $('motionToggle').setAttribute('aria-checked', String(profile.motion)); motionPreference(); save(); };
+    if ($('hapticToggle')) $('hapticToggle').onclick = () => { profile.haptics = !profile.haptics; $('hapticToggle').setAttribute('aria-checked', String(profile.haptics)); save(); haptic(); };
     $('resumeButton').onclick = closeDialog;
     $('restartButton').onclick = () => { closeDialog(); start(engine.level); };
     $('settingsMap').onclick = map;
@@ -261,6 +361,7 @@
     });
   }
   function start(level) {
+    turnId++; cancelPointer(); effects.clear(); targetNodes.clear();
     engine = new Engine(level); profile.awarded = false; selected = null; busy = false;
     cancelBooster(); render(engine.snapshot(), false); save(); scheduleHint();
     $('hostText').innerHTML = 'Çaylar benden,<br><strong>eşleştirmeler senden!</strong>';
@@ -272,7 +373,7 @@
     if (won && !profile.awarded) {
       profile.coins += reward; profile.best[engine.level] = Math.max(profile.best[engine.level] || 0, stars);
       profile.unlocked = Math.max(profile.unlocked, Math.min(LEVELS.length - 1, engine.level + 1));
-      profile.awarded = true; save(); sound('win');
+      profile.awarded = true; save(); sound('win'); effects.celebrate();
     }
     render();
     if (won) {
@@ -288,8 +389,13 @@
   }
   $('settingsButton').onclick = settings; $('helpButton').onclick = help; $('mapButton').onclick = map; $('brandButton').onclick = map;
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.open) { selected = null; cancelBooster(); render(); scheduleHint(); } });
-  new ResizeObserver(() => { render(view, false); }).observe(boardEl);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { clearHint(); if (!busy) save(); } else scheduleHint(); });
+  new ResizeObserver(layoutTiles).observe(boardEl);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { cancelPointer(); clearHint(); effects.clear(); save(); }
+    else if (!busy && engine.status !== 'playing' && !modal.open) finish();
+    else scheduleHint();
+  });
+  window.addEventListener('pagehide', () => { save(); effects.clear(); });
   render(engine.snapshot(), false); save(); scheduleHint();
   if (engine.status !== 'playing') finish();
 })();

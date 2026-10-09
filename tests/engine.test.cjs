@@ -56,18 +56,44 @@ test('boosters consume stock, not moves; depleted boosters cannot be used', () =
   assert.ok(e.boost('shuffle').valid); assert.equal(e.boosters.shuffle, 1);
   assert.equal(e.moves, moves); invariant(e);
 });
-test('a four-match creates a rocket, and direct activation costs one move', () => {
+test('a four-match clears all four foods and visibly creates a distinct rocket', () => {
   const e = new Engine(0, seeded(8));
   e.board = Array.from({ length: ROWS }, (_, y) => Array.from({ length: COLS }, (_, x) => e.piece((x + y * 2) % 5)));
   [0, 0, 1, 0, 2, 3, 4].forEach((t, x) => { e.board[0][x].type = t; });
   e.board[1][2].type = 0;
+  const foodIds = [e.get(0, 0).id, e.get(1, 0).id, e.get(2, 1).id, e.get(3, 0).id];
   const result = e.swap({ x: 2, y: 0 }, { x: 2, y: 1 });
   assert.ok(result.valid);
-  assert.ok(result.events.some(event => event.state.board.flat().some(p => p?.special === 'row')));
-  e.board[0][0].special = 'row';
+  const creation = result.events.find(event => event.kind === 'create');
+  const clearing = result.events[result.events.indexOf(creation) - 1];
+  assert.equal(clearing.kind, 'clear');
+  for (let x = 0; x < 4; x++) assert.ok(clearing.positions.some(p => p.x === x && p.y === 0));
+  assert.equal(creation.state.collected[0], 4);
+  assert.ok(foodIds.every(id => !creation.state.board.flat().some(p => p?.id === id)));
+  assert.ok(creation.pieces.some(p => p.special === 'row'));
+  assert.ok(creation.state.board.flat().some(p => p?.special === 'row' && !foodIds.includes(p.id)));
+});
+test('a rocket clears its row without counting its original food twice', () => {
+  const e = new Engine(0, seeded(13));
+  e.board = Array.from({ length: ROWS }, (_, y) => Array.from({ length: COLS }, (_, x) => e.piece((x + y * 2) % 5)));
+  e.board[0].forEach(p => { p.type = 2; });
+  e.board[0][0] = { ...e.piece(0), special: 'row' };
+  e.collected[0] = 4;
   const moves = e.moves, activated = e.activate({ x: 0, y: 0 });
   assert.ok(activated.valid); assert.equal(e.moves, moves - 1);
   assert.ok(activated.events.some(event => event.kind === 'clear' && event.positions.length >= 7));
+  const firstFall = activated.events.find(event => event.kind === 'fall');
+  assert.equal(firstFall.state.collected[0], 4);
+  assert.equal(firstFall.state.collected[2], 6);
+});
+test('a basket next to the transformation cell receives the match hit', () => {
+  const e = new Engine(0, seeded(18)), events = [];
+  e.board = Array.from({ length: ROWS }, (_, y) => Array.from({ length: COLS }, (_, x) => e.piece((x + y * 2) % 5)));
+  e.board[1][2] = { ...e.piece(5), hp: 1 };
+  e.clear(new Set([0, 1, 2, 3]), new Map([[2, 'row']]), events, 1);
+  assert.equal(e.get(2, 1), null);
+  assert.equal(e.collected[5], 1);
+  assert.equal(e.get(2, 0).special, 'row');
 });
 test('shuffle preserves every basket, settles, and provides a legal move', () => {
   const e = new Engine(4, seeded(44));
@@ -80,4 +106,33 @@ test('corrupted or missing saves are rejected', () => {
   assert.equal(Engine.restore({ board: [] }), null);
   const save = new Engine().snapshot(); save.board[0][0].id = save.board[0][1].id;
   assert.equal(Engine.restore(save), null);
+});
+test('a power-up cannot invisibly match the food it replaced', () => {
+  const e = new Engine(0, seeded(42));
+  e.board = Array.from({ length: ROWS }, (_, y) => Array.from({ length: COLS }, (_, x) => e.piece((x + y * 2) % 5)));
+  [0, 0, 0, 3, 4, 2, 1].forEach((type, x) => { e.board[0][x].type = type; });
+  assert.ok(e.matches().some(group => group.includes(0) && group.includes(2)));
+  e.board[0][1].special = 'row';
+  assert.ok(!e.matches().some(group => group.includes(0) || group.includes(1) || group.includes(2)));
+  assert.ok(e.activate({ x: 1, y: 0 }).valid);
+  invariant(e);
+});
+test('power effects include their origin, type, and actual score gain', () => {
+  const e = new Engine(0, seeded(4));
+  e.board[0][0].special = 'bomb';
+  const result = e.activate({ x: 0, y: 0 });
+  const clear = result.events.find(event => event.kind === 'clear');
+  assert.deepEqual(clear.activated[0], { x: 0, y: 0, special: 'bomb' });
+  assert.ok(clear.points > 0);
+  const rocket = new Engine(0, seeded(4)).boost('rocket', { x: 2, y: 4 });
+  assert.deepEqual(rocket.events[0].activated, [{ x: 2, y: 4, special: 'row' }]);
+});
+test('reload at every visual stage restores the already-resolved turn', () => {
+  const e = new Engine(0, seeded(17));
+  const move = e.legalMoves()[0], result = e.swap(move.a, move.b);
+  const committed = e.snapshot();
+  for (const _ of result.events) {
+    const restored = Engine.restore(committed);
+    assert.ok(restored); assert.deepEqual(restored.snapshot(), committed);
+  }
 });

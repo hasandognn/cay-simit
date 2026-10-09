@@ -36,6 +36,10 @@ Oyun adresi: https://hasandognn.github.io/cay-simit/
 
 ## Doğrulama
 
-`npm test`: Node.js yerleşik test çalıştırıcısı ile 7 test; 150 sabit tohumlu tam oyun turu, geçersiz hamle, özel taş, güçlendirici, sepet, karıştırma ve kayıt kurtarma senaryoları.
+`npm test`: Node.js yerleşik test çalıştırıcısı ile 150 sabit tohumlu tam oyun turu; geçersiz hamle, özel taş, güçlendirici, sepet, karıştırma ve kayıt kurtarma senaryoları.
+
+Mobil arayüz, ekranın kullanılabilir yüksekliğine göre tahtayı boyutlandırır. Tek parmakla kaydırma ve iki taşa sırayla dokunma desteklenir. Patlama efektleri sınırlı parçacık sayısıyla tek canvas üzerinde çizilir; animasyonlar boşta ve arka planda çalışmaz. Ayarlardan canlı efektler kapatılabilir, destekleyen cihazlarda hafif titreşim açılabilir. İşletim sisteminin azaltılmış hareket tercihi korunur.
+
+Her hamlenin sonuç durumu animasyon başlamadan kaydedilir. Dörtlü eşleşmenin dört yiyeceği de toplanır ve ayrı görünümlü bir roket oluşturulur; bu roket ikinci kez yiyecek sayılmaz.
 
 Bu sürüm oynanabilir bir prototiptir. Altın yalnızca oyun içi ödüldür; ödeme veya mağaza entegrasyonu bulunmaz. İlerleme bu tarayıcıya özeldir.

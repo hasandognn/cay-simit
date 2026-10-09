@@ -58,6 +58,9 @@
       for (const field of ['serial', 'board', 'moves', 'score', 'collected', 'boosters', 'status']) game[field] = clone(data[field]);
       if (game.matches().length) return null;
       if (game.status === 'playing' && (game.moves === 0 || game.complete())) return null;
+      if (game.status === 'won' && !game.complete()) return null;
+      if (game.status === 'lost' && (game.moves !== 0 || game.complete())) return null;
+      if (game.status === 'playing' && !game.legalMoves().length) game.shuffle();
       return game;
     }
     fillFresh() {
@@ -82,14 +85,16 @@
     }
     matches() {
       const groups = [];
+      // Power-ups have their own artwork, so their old food color cannot form an invisible match.
+      const matchType = (x, y) => { const p = this.get(x, y); return p && !p.special && p.type < TYPES ? p.type : null; };
       for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS;) {
-        const start = x, t = this.get(x, y)?.type;
-        while (x < COLS && this.get(x, y)?.type === t) x++;
+        const start = x, t = matchType(x, y);
+        while (x < COLS && matchType(x, y) === t) x++;
         if (t != null && t < TYPES && x - start >= 3) groups.push(Array.from({ length: x - start }, (_, i) => key(start + i, y)));
       }
       for (let x = 0; x < COLS; x++) for (let y = 0; y < ROWS;) {
-        const start = y, t = this.get(x, y)?.type;
-        while (y < ROWS && this.get(x, y)?.type === t) y++;
+        const start = y, t = matchType(x, y);
+        while (y < ROWS && matchType(x, y) === t) y++;
         if (t != null && t < TYPES && y - start >= 3) groups.push(Array.from({ length: y - start }, (_, i) => key(x, start + i)));
       }
       return groups;
@@ -149,7 +154,7 @@
       if (kind === 'shuffle') { this.shuffle(); events.push(this.event('shuffle')); }
       else {
         const seeds = kind === 'rocket' ? new Set(Array.from({ length: COLS }, (_, x) => key(x, pos.y))) : new Set([key(pos.x, pos.y)]);
-        this.clear(seeds, new Map(), events, 1);
+        this.clear(seeds, new Map(), events, 1, undefined, false, kind === 'rocket' ? [{ ...pos, special: 'row' }] : []);
         this.fall(); events.push(this.event('fall'));
       }
       this.resolve(events);
@@ -176,8 +181,8 @@
       this.status = this.complete() ? 'won' : this.moves <= 0 ? 'lost' : 'playing';
       events.push(this.event('settled'));
     }
-    clear(seeds, created, events, chain, rainbowType, allColors = false) {
-      const before = this.snapshot(), triggered = new Set(), damaged = new Set(), removed = [];
+    clear(seeds, created, events, chain, rainbowType, allColors = false, extraPowers = []) {
+      const before = this.snapshot(), triggered = new Set(), damaged = new Set(), removed = [], replacements = new Map();
       const add = (x, y) => { if (this.get(x, y)) seeds.add(key(x, y)); };
       if (allColors) for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) add(x, y);
       // Set iterators include newly added entries, so powers chain without duplicates.
@@ -198,9 +203,11 @@
         const { x, y } = xy(k), p = this.get(x, y);
         if (!p) continue;
         if (p.type === 5) { damaged.add(k); continue; }
-        if (created.has(k)) continue;
         for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) if (this.get(x + dx, y + dy)?.type === 5) damaged.add(key(x + dx, y + dy));
-        this.collected[p.type] = (this.collected[p.type] || 0) + 1;
+        // A matched food is collected even when its cell creates a power-up.
+        // The replacement is a distinct piece; detonating it must not count that food twice.
+        if (!p.special) this.collected[p.type] = (this.collected[p.type] || 0) + 1;
+        if (created.has(k)) replacements.set(k, { type: p.type, special: created.get(k) });
         this.board[y][x] = null; removed.push({ x, y });
       }
       const cracked = [];
@@ -211,9 +218,16 @@
         if (p.hp <= 0) { this.board[y][x] = null; this.collected[5] = (this.collected[5] || 0) + 1; removed.push({ x, y }); }
         else cracked.push({ x, y });
       }
-      for (const [k, special] of created) { const { x, y } = xy(k); if (this.get(x, y)) this.board[y][x].special = special; }
+      const powers = [];
+      for (const [k, { type, special }] of replacements) {
+        const { x, y } = xy(k), power = { ...this.piece(type), special };
+        this.board[y][x] = power;
+        powers.push({ x, y, id: power.id, special });
+      }
       this.score += removed.length * 50 * Math.min(chain, 4) + triggered.size * 100;
-      events.push({ kind: 'clear', state: before, positions: removed, cracked, chain, power: triggered.size > 0, created: [...created.keys()].map(xy) });
+      const activated = [...triggered].map(k => { const { x, y } = xy(k); return { x, y, special: before.board[y][x].special }; }).concat(extraPowers);
+      events.push({ kind: 'clear', state: before, positions: removed, cracked, chain, power: activated.length > 0, activated, created: powers, points: this.score - before.score });
+      if (powers.length) events.push(this.event('create', { pieces: powers }));
     }
     fall() {
       for (let x = 0; x < COLS; x++) {
