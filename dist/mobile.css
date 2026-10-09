@@ -58,3 +58,14 @@ dialog{max-height:calc(100svh - 36px);overflow-y:auto;overscroll-behavior:contai
 @media(max-width:799px) and (max-height:620px) and (orientation:portrait){.app{min-height:520px}.garden{display:none}.play-area{margin-top:0}}
 @media(max-height:500px) and (orientation:landscape){.app{min-height:0;height:auto;width:min(1000px,100% - 24px)}.game-shell{display:grid;grid-template-columns:.65fr 1fr;height:calc(100svh - 65px);min-height:310px}.garden{height:auto;min-height:100%;display:block}.garden-art{object-position:25% center}.garden-title{display:none}.play-area{margin:0;min-height:0;grid-template-rows:12px 54px 16px minmax(0,1fr) 20px 48px;padding:6px 10px;gap:2px}.game-hud{height:54px}.boosters{gap:14px}.booster{min-height:44px;flex-direction:row;gap:5px}.booster-icon{width:39px;height:37px}.booster-divider{display:none}.topbar{height:48px;min-height:48px}.game-guidance{font-size:9px}.moves-card strong{font-size:25px}.targets{height:30px}.target .piece-art{height:32px}}
 @media(prefers-reduced-motion:reduce){.tile .piece-art,.power-art,.score-popup{animation:none!important}.score-popup{display:none}}
+/* Landscape keeps the full eight-row board beside the HUD, not beneath it. */
+@media(max-height:500px) and (orientation:landscape){
+  .app{width:min(960px,100%);height:100svh;min-height:0;display:flex;flex-direction:column;padding:0 max(8px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+  .topbar{flex:0 0 46px;height:46px;min-height:46px;margin:0;padding:0 8px}.brand{font-size:25px}.brand small{display:none}.brand-simit{width:29px;height:29px;border-width:8px}
+  .game-shell{height:auto;min-height:0;flex:1;display:block;border-radius:16px;overflow:hidden}.garden,.page-footer{display:none}
+  .play-area{height:100%;padding:9px 12px;margin:0;display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,1fr);grid-template-rows:18px 64px 24px minmax(0,1fr) 40px;gap:5px 16px}
+  .level-heading{grid-column:1;grid-row:1}.game-hud{grid-column:1;grid-row:2;height:64px;margin:0}.score-track{grid-column:1;grid-row:3;height:24px;margin:0 5px}
+  .board-space{grid-column:2;grid-row:1/6}.game-guidance{grid-column:1;grid-row:5;font-size:10px}.boosters{grid-column:1;grid-row:4;align-self:center;gap:10px;flex-wrap:nowrap}
+  .board-space .board-frame{width:min(100%,calc((100cqh - 16px)*.875 + 16px));border-width:4px;padding:3px}.board-space .board{aspect-ratio:7/8}.effects{inset:7px}
+  .booster{flex-direction:column;min-width:44px;min-height:52px;font-size:9px}.booster-icon{width:43px;height:39px}.help-button{min-width:40px}.moves-card{width:62px;padding-top:4px}.moves-card strong{font-size:31px}.targets{height:39px;gap:8px}.target .piece-art{width:33px;height:36px}.target b{font-size:17px}
+}
