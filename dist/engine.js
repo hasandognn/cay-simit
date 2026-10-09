@@ -8,11 +8,11 @@
   const COLS = 7, ROWS = 8, TYPES = 5;
   const NAMES = ['Simit', 'Çay', 'Peynir', 'Üzüm', 'Domates', 'Kahvaltı sepeti'];
   const LEVELS = [
-    { name: 'İlk dem', place: 'Boğaz kıyısı', moves: 26, targets: { 0: 18, 1: 18, 5: 4 }, baskets: [[2, 3, 1], [4, 3, 1], [1, 6, 1], [5, 6, 1]] },
-    { name: 'Sabah bereketi', place: 'Ortaköy', moves: 27, targets: { 1: 22, 2: 20, 5: 5 }, baskets: [[1, 2, 1], [5, 2, 1], [3, 4, 2], [1, 6, 1], [5, 6, 1]] },
-    { name: 'Vapur keyfi', place: 'Beşiktaş', moves: 28, targets: { 0: 24, 3: 24, 5: 6 }, baskets: [[1, 2, 1], [5, 2, 1], [2, 4, 2], [4, 4, 2], [1, 6, 1], [5, 6, 1]] },
+    { name: 'İlk dem', place: 'Ortaköy', moves: 26, targets: { 0: 18, 1: 18, 5: 4 }, baskets: [[2, 3, 1], [4, 3, 1], [1, 6, 1], [5, 6, 1]] },
+    { name: 'Sabah bereketi', place: 'Beşiktaş', moves: 27, targets: { 1: 22, 2: 20, 5: 5 }, baskets: [[1, 2, 1], [5, 2, 1], [3, 4, 2], [1, 6, 1], [5, 6, 1]] },
+    { name: 'Vapur keyfi', place: 'Karaköy', moves: 28, targets: { 0: 24, 3: 24, 5: 6 }, baskets: [[1, 2, 1], [5, 2, 1], [2, 4, 2], [4, 4, 2], [1, 6, 1], [5, 6, 1]] },
     { name: 'Bir çay daha', place: 'Üsküdar', moves: 28, targets: { 1: 28, 4: 26, 5: 6 }, baskets: [[1, 2, 2], [5, 2, 2], [2, 4, 2], [4, 4, 2], [1, 6, 2], [5, 6, 2]] },
-    { name: 'Sofra şenliği', place: 'Kuzguncuk', moves: 30, targets: { 0: 30, 2: 28, 5: 7 }, baskets: [[1, 1, 2], [5, 1, 2], [2, 3, 2], [4, 3, 2], [1, 5, 2], [5, 5, 2], [3, 6, 2]] },
+    { name: 'Sofra şenliği', place: 'Kadıköy', moves: 30, targets: { 0: 30, 2: 28, 5: 7 }, baskets: [[1, 1, 2], [5, 1, 2], [2, 3, 2], [4, 3, 2], [1, 5, 2], [5, 5, 2], [3, 6, 2]] },
   ];
   const clone = value => JSON.parse(JSON.stringify(value));
   const key = (x, y) => y * COLS + x;

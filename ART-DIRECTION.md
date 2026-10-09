@@ -1,5 +1,30 @@
 # Görsel üretim notları
 
+## İstanbul semtleri — 2026-10-09
+
+Yerleşik image_gen aracıyla beş ayrı özgün manzara üretildi; web aktarımını küçültmek için JPEG olarak kodlandı. Oyun arayüzü içindeki temsili manzaralardır, coğrafi harita değildir. Mevcut SVG ikon ailesi beş semt simgesiyle genişletildi.
+
+### dist/assets/ortakoy.jpg
+
+Use case: stylized-concept. Create an original high-quality landscape 3:2 background illustration for a Turkish breakfast match-3 mobile game, polished cozy rounded 3D painterly casual-game art. No text, letters, logos, watermarks, borders or UI. Rich toy-like detailed materials, warm cream highlights, colorful foliage. Composition must work BOTH as a full-height narrow desktop crop and as a shallow panoramic mobile crop: put the main recognizable landmark and waterfront at the vertical center, all essential features in central 60 percent. A small cafe table with Turkish tea and simit in the low foreground. No people. Ortakoy waterfront in Istanbul, ornate cream Ortakoy Mosque with two slender minarets prominently at center-left, Bosphorus suspension bridge sweeping behind to the right, turquoise water and little white boats, pink bougainvillea framing edges. Fresh sunny morning, coral cream and turquoise.
+
+### dist/assets/besiktas.jpg
+
+Use case: stylized-concept. Create an original high-quality landscape 3:2 background illustration for a Turkish breakfast match-3 mobile game, polished cozy rounded 3D painterly casual-game art. No text, letters, logos, watermarks, borders or UI. Rich toy-like detailed materials, warm cream highlights, colorful foliage. Composition must work BOTH as a full-height narrow desktop crop and as a shallow panoramic mobile crop: put the main recognizable landmark and waterfront at the vertical center, all essential features in central 60 percent. A small cafe table with Turkish tea and simit in the low foreground. No people. Besiktas waterfront in Istanbul, a charming cream passenger ferry with dark chimney and a tiny red flag prominently in center, dock with warm wooden cafe seating and distant rounded city buildings, sea gulls over bright turquoise water. Warm clear late morning, jade green and golden yellow accents.
+
+### dist/assets/karakoy.jpg
+
+Use case: stylized-concept. Create an original high-quality landscape 3:2 background illustration for a Turkish breakfast match-3 mobile game, polished cozy rounded 3D painterly casual-game art. No text, letters, logos, watermarks, borders or UI. Rich toy-like detailed materials, warm cream highlights, colorful foliage. Composition must work BOTH as a full-height narrow desktop crop and as a shallow panoramic mobile crop: put the main recognizable landmark and waterfront at the vertical center, all essential features in central 60 percent. A small cafe table with Turkish tea and simit in the low foreground. No people. Karakoy in Istanbul, iconic cylindrical stone Galata Tower with a conical gray roof prominently in the central background above a sloping street of pastel cream terracotta houses, cozy pavement cafe, distant glimpse of blue harbor to right. Afternoon honey sunlight, terracotta and teal accents.
+
+### dist/assets/uskudar.jpg
+
+Use case: stylized-concept. Create an original high-quality landscape 3:2 background illustration for a Turkish breakfast match-3 mobile game, polished cozy rounded 3D painterly casual-game art. No text, letters, logos, watermarks, borders or UI. Rich toy-like detailed materials, warm cream highlights, colorful foliage. Composition must work BOTH as a full-height narrow desktop crop and as a shallow panoramic mobile crop: put the main recognizable landmark and waterfront at the vertical center, all essential features in central 60 percent. A small cafe table with Turkish tea and simit in the low foreground. No people. Uskudar Istanbul waterfront, iconic Maiden's Tower/Kiz Kulesi on its small island prominently centered, recognizable white square base and tall dark roofed tower, turquoise Bosphorus in front, seagulls and warm hazy city silhouette beyond, foreground promenade with a tea table. Golden sunset, soft lilac sky and apricot light, inviting and colorful rather than dark.
+
+### dist/assets/kadikoy.jpg
+
+Use case: stylized-concept. Create an original high-quality landscape 3:2 background illustration for a Turkish breakfast match-3 mobile game, polished cozy rounded 3D painterly casual-game art. No text, letters, logos, watermarks, borders or UI. Rich toy-like detailed materials, warm cream highlights, colorful foliage. Composition must work BOTH as a full-height narrow desktop crop and as a shallow panoramic mobile crop: put the main recognizable landmark and waterfront at the vertical center, all essential features in central 60 percent. A small cafe table with Turkish tea and simit in the low foreground. No people. Kadikoy Istanbul, charming historic red street tram prominently in center on a cobblestone street, soft pastel shopfronts with blank awnings and no lettering, leafy plane trees and small cafe tables, glimpse of blue sea at right. Sunny late afternoon, leafy mint, warm cream, raspberry red accents.
+
+
 Bu oyunun görselleri yerleşik image_gen aracıyla üretildi. Kullanıcının ekran görüntüsü yalnızca tematik referanstır; görseller özgün olarak üretildi.
 
 ## Kahvehane — dist/assets/tea-garden.png
@@ -23,4 +48,3 @@ BOTTOM RIGHT: small round honey-brown wicker picnic basket containing a simit an
 All pieces should be cohesive highly polished rounded 3D casual mobile-game art, toy-like, vibrant colors, appetizing, clean large silhouettes, soft painted shading, top-left highlight and small contact shadow directly beneath each object. Appropriate to read very clearly at 50 pixels. Each sprite alone, not touching any other object.
 
 Son düzeltme: Aynı altı nesne ve 3×2 yerleşim korunarak arka plan gerçek alfa saydamlığına dönüştürüldü, nesnelerin çevresinde boşluk bırakılması istendi. Son PNG RGBA alfa kanalına sahiptir.
-

@@ -10,13 +10,16 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="powerups.css?v=6">
   <link rel="stylesheet" href="mobile.css?v=6">
-  <script src="engine.js?v=3" defer></script>
+  <link rel="stylesheet" href="districts.css?v=1">
+  <script src="engine.js?v=7" defer></script>
+  <script src="districts.js?v=1" defer></script>
   <script src="effects.js?v=6" defer></script>
-  <script src="game.js?v=6" defer></script>
+  <script src="game.js?v=7" defer></script>
 </head>
 <body>
   <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol>
       <symbol id="i-settings" viewBox="0 0 24 24"><path d="m9 3-.6 2.4-2 .9-2.2-.7-2 3.4 1.7 1.7v2.6L2.2 15l2 3.4 2.2-.7 2 .9L9 21h4l.6-2.4 2-.9 2.2.7 2-3.4-1.7-1.7v-2.6L19.8 9l-2-3.4-2.2.7-2-.9L13 3z"/><circle cx="11" cy="12" r="3"/></symbol>
       <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
       <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
@@ -37,15 +40,15 @@
     </header>
     <div class="game-shell">
       <section class="garden" aria-label="Boğaz kıyısında çay bahçesi">
-        <img class="garden-art" src="assets/tea-garden.png" alt="Çay tepsisi taşıyan güler yüzlü bir kahveci ve Boğaz manzaralı çay bahçesi" fetchpriority="high">
+        <img class="garden-art" alt="İstanbul’da semte özel çay bahçesi manzarası" fetchpriority="high">
         <div class="garden-shade"></div>
-        <div class="location"><svg><use href="#i-pin"/></svg> İSTANBUL · BOĞAZ KIYISI</div>
+        <button class="location" id="districtButton" aria-label="İstanbul bölüm haritasını aç"><img class="district-icon" src="assets/district-mosque.svg" alt=""> İSTANBUL · ORTAKÖY <span class="map-cue">↗</span></button>
         <div class="garden-title"><span>Demli bir çay.</span><span>Tatlı bir mola.</span></div>
         <div class="host-note"><span class="note-spark">✦</span><p id="hostText">Çaylar benden,<br><strong>eşleştirmeler senden!</strong></p><span class="host-signature">— Kemal Usta</span></div>
         <button class="journey-button" id="mapButton"><span class="journey-icon"><svg><use href="#i-pin"/></svg></span><span><small>MAHALLE MAHALLE</small>Boğaz yolculuğu</span><svg class="arrow"><use href="#i-arrow"/></svg></button>
       </section>
       <section class="play-area" aria-label="Eşleştirme oyunu">
-        <div class="level-heading"><span class="heading-line"></span><span id="levelTitle">BÖLÜM 1 · İLK DEM</span><span class="heading-line"></span></div>
+        <div class="level-heading"><span class="heading-line"></span><button id="levelTitle" class="level-title" aria-label="Bölüm haritasını aç">BÖLÜM 1 · ORTAKÖY</button><span class="heading-line"></span></div>
         <div class="game-hud">
           <div class="moves-card"><span>HAMLE</span><strong id="moves">26</strong><i></i></div>
           <div class="targets-card"><span class="targets-label">KAHVALTIYI HAZIRLA</span><div class="targets" id="targets"></div></div>

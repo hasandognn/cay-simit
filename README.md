@@ -21,6 +21,7 @@ Oyun adresi: https://hasandognn.github.io/cay-simit/
 - Sepetlerin yanında eşleştirme yaparak onları topla. `2` işaretli sepetler iki darbe ister.
 - Tokmak bir hücreye vurur, roket bir satırı temizler, karıştır taşları yeniler. Bu araçlar hamle tüketmez; her bölümde 3/2/2 hakla başlar.
 - Beş bölüm sırayla açılır. Bölümler, puan, altın, ses tercihi ve mevcut tur tarayıcının yerel depolamasında saklanır.
+- İstanbul haritasındaki rota: Ortaköy → Beşiktaş → Karaköy → Üsküdar → Kadıköy. Her semtin ayrı manzarası, renk paleti ve simgesi vardır. Harita, kazanılan yıldızları, kilitleri ve mevcut durağı gösterir; bölüm başlığına veya üstteki semt etiketine dokunarak açılır. Mevcut kayıtların bölüm indeksleri ve ilerlemesi korunur.
 - Yıldızlar puana bağlıdır: tamamlanan bölüm en az bir yıldız, 3.700 puan iki, 6.000 puan üç yıldız verir.
 - Klavyede Tab ile tahtaya gel, ok tuşlarıyla dolaş, Enter/Boşluk ile seç. Escape seçimi veya güçlendiriciyi iptal eder.
 

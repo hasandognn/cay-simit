@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const { Engine, LEVELS, NAMES, COLS, ROWS } = window.TeaGame;
+  const districts = window.TeaDistricts;
   const $ = id => document.getElementById(id);
   const boardEl = $('board'), modal = $('modal'), content = $('modalContent');
   const STORAGE = 'cay-simit-v1';
@@ -30,6 +31,7 @@
   let view = engine.snapshot(), busy = false, selected = null, activeBooster = null;
   let hintTimer, toastTimer, comboTimer, pointer, suppressClickUntil = 0, audioContext;
   let turnId = 0;
+  let shownDistrict = -1;
   const nodes = new Map();
   const movements = new Map(), targetNodes = new Map();
   const effects = new window.TeaEffects($('fxCanvas'), () => motion);
@@ -66,7 +68,24 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 2700);
   }
   function guidance(message = defaultGuidance) { $('guidance').textContent = message; }
+  function applyDistrict() {
+    if (shownDistrict === engine.level) return;
+    shownDistrict = engine.level;
+    const d = districts[engine.level];
+    document.body.dataset.district = d.id;
+    document.body.style.setProperty('--district', d.color);
+    document.body.style.setProperty('--district-soft', d.soft);
+    document.body.style.setProperty('--district-icon', `url("assets/district-${d.icon}.svg")`);
+    const hero = document.querySelector('.garden-art');
+    hero.src = d.image; hero.alt = d.alt;
+    document.querySelector('.garden').setAttribute('aria-label', `${d.name} manzarası`);
+    document.querySelectorAll('.garden-title span').forEach((span, i) => { span.textContent = d.title[i]; });
+    $('districtButton').innerHTML = `<img class="district-icon" src="assets/district-${d.icon}.svg" alt=""> İSTANBUL · ${d.name.toLocaleUpperCase('tr-TR')} <span class="map-cue">↗</span>`;
+    $('districtButton').setAttribute('aria-label', `${d.name}, İstanbul bölüm haritasını aç`);
+    document.querySelector('.journey-icon').innerHTML = `<img class="district-icon" src="assets/district-${d.icon}.svg" alt="">`;
+  }
   function render(state = engine.snapshot(), animate = true, phase = '') {
+    applyDistrict();
     view = state;
     const size = { w: boardEl.clientWidth / COLS, h: boardEl.clientHeight / ROWS };
     const alive = new Set();
@@ -133,7 +152,8 @@
     $('score').textContent = state.score.toLocaleString('tr-TR');
     $('scoreFill').style.width = `${Math.min(100, state.score / 6000 * 100)}%`;
     document.querySelectorAll('.progress-star').forEach((star, i) => star.classList.toggle('earned', state.score >= [1600, 3700, 6000][i]));
-    $('levelTitle').textContent = `BÖLÜM ${engine.level + 1} · ${LEVELS[engine.level].name.toLocaleUpperCase('tr-TR')}`;
+    $('levelTitle').textContent = `BÖLÜM ${engine.level + 1} · ${districts[engine.level].name.toLocaleUpperCase('tr-TR')}`;
+    $('levelTitle').setAttribute('aria-label', `${districts[engine.level].name}, bölüm ${engine.level + 1}, haritayı aç`);
     $('coins').textContent = profile.coins.toLocaleString('tr-TR');
     renderTargets(state);
     for (const kind of ['hammer', 'rocket', 'shuffle']) {
@@ -343,6 +363,7 @@
   }));
   function openDialog(html, { dismissible = true } = {}) {
     clearHint(); selected = null; render(view, false);
+    modal.classList.remove('district-map-dialog');
     content.innerHTML = html; $('closeModal').hidden = !dismissible;
     modal.dataset.dismissible = String(dismissible);
     if (!modal.open) modal.showModal();
@@ -376,7 +397,14 @@
   }
   function map() {
     if (busy) { toast('Taşlar yerleşiyor, bir saniye…'); return; }
-    openDialog(`<div class="modal-eyebrow">MAHALLE MAHALLE</div><h1 class="modal-title" id="modalTitle">Boğaz yolculuğu</h1><p class="modal-copy">Her durakta başka bir kahvaltı,<br>her sofrada biraz daha İstanbul.</p><div class="level-list">${LEVELS.map((l, i) => `<button class="level-option${engine.level === i ? ' current' : ''}" data-level="${i}" ${i > profile.unlocked ? 'disabled' : ''}><span class="level-number">${i + 1}</span><span class="level-name">${l.name}<small>${l.place}</small></span><span class="level-status">${i > profile.unlocked ? 'Kilitli' : profile.best[i] ? '★'.repeat(profile.best[i]) : 'Oyna →'}</span></button>`).join('')}</div><p class="modal-copy" style="margin-bottom:0">Bölümü tamamla, sıradaki durağı aç.</p>`);
+    openDialog(`<div class="modal-eyebrow">BİR ŞEHİR, BEŞ GÜZEL MOLA</div><h1 class="modal-title" id="modalTitle">İstanbul yolculuğu</h1><p class="map-intro">Her semtte yeni bir manzara.<br>Sofrayı tamamla, sıradaki durağa geç.</p><div class="map-progress">${districts.map((_, i) => `<i class="${i <= profile.unlocked ? 'open' : ''}"></i>`).join('')} ${profile.unlocked + 1} / ${districts.length} durak açık</div>
+      <div class="istanbul-map" role="group" aria-label="İstanbul semtleri ve bölüm ilerlemesi">
+        <svg class="map-geography" viewBox="0 0 400 660" preserveAspectRatio="none" aria-hidden="true"><defs><pattern id="map-waves" width="45" height="35" patternUnits="userSpaceOnUse"><path d="M5 20q8-5 16 0t16 0" fill="none" stroke="#ffffff50" stroke-width="2"/></pattern></defs><rect width="400" height="660" fill="url(#map-waves)"/><path d="M0 0h226q-100 75-50 165t-45 155q-65 50-40 145t-10 195H0Z" fill="#e5e9c8"/><path d="M400 0h-55q-70 140-25 225t-10 170q-50 95 10 165t30 100h50Z" fill="#dce9c5"/><path d="M120 79C120 132 280 145 280 205S120 267 120 330s160 62 160 125-160 61-160 126" fill="none" stroke="#ffffffa8" stroke-width="12" stroke-linecap="round"/><path d="M120 79C120 132 280 145 280 205S120 267 120 330s160 62 160 125-160 61-160 126" fill="none" stroke="#baae7c" stroke-width="3" stroke-dasharray="2 10" stroke-linecap="round"/><g fill="#92b995" opacity=".6"><circle cx="23" cy="180" r="12"/><circle cx="35" cy="192" r="9"/><circle cx="376" cy="323" r="14"/><circle cx="364" cy="339" r="10"/><circle cx="25" cy="453" r="13"/><circle cx="39" cy="469" r="9"/></g></svg>
+        <span class="map-sea-label" aria-hidden="true">BOĞAZ</span>
+        ${districts.map((d, i) => `<button class="map-node${engine.level === i ? ' current' : ''}" style="--x:${i % 2 ? 70 : 30}%;--y:${12 + i * 19}%;--stop:${d.color}" data-level="${i}" ${i > profile.unlocked ? 'disabled' : ''} ${engine.level === i ? 'aria-current="step"' : ''} aria-label="${d.name}, bölüm ${i + 1}, ${i > profile.unlocked ? 'kilitli' : profile.best[i] ? `${profile.best[i]} yıldız, tekrar oyna` : engine.level === i ? 'mevcut bölüm, devam et' : 'oyna'}">${engine.level === i ? '<span class="map-current-tag">BURADASIN</span>' : ''}<div class="map-picture"><img src="${d.image}" alt="" loading="lazy"><span class="map-landmark"><img src="assets/district-${d.icon}.svg" alt=""></span><span class="map-number">${i > profile.unlocked ? svg('lock') : i + 1}</span></div><strong>${d.name}</strong><small>${LEVELS[i].name}</small><span class="map-stars">${i > profile.unlocked ? 'Kilitli' : profile.best[i] ? '★'.repeat(profile.best[i]) + '☆'.repeat(3 - profile.best[i]) : engine.level === i ? 'Devam et →' : 'Başlayalım →'}</span></button>`).join('')}
+      </div><p class="map-footnote">Temsili İstanbul rotası<br>Bölümü tamamla, sıradaki semti keşfet.</p><button class="secondary-button map-return" id="mapReturn">Oyuna dön</button>`);
+    modal.classList.add('district-map-dialog');
+    $('mapReturn').onclick = closeDialog;
     content.querySelectorAll('[data-level]').forEach(b => b.onclick = () => {
       const level = Number(b.dataset.level);
       if (level > profile.unlocked) return;
@@ -414,7 +442,7 @@
       $('retryLevel').onclick = () => { closeDialog(); start(engine.level); }; $('resultMap').onclick = map;
     }
   }
-  $('settingsButton').onclick = settings; $('helpButton').onclick = help; $('mapButton').onclick = map; $('brandButton').onclick = map;
+  $('settingsButton').onclick = settings; $('helpButton').onclick = help; $('mapButton').onclick = map; $('brandButton').onclick = map; $('districtButton').onclick = map; $('levelTitle').onclick = map;
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.open) { selected = null; cancelBooster(); render(); scheduleHint(); } });
   new ResizeObserver(layoutTiles).observe(boardEl);
   document.addEventListener('visibilitychange', () => {
